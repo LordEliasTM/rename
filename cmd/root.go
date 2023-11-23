@@ -8,10 +8,10 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"regexp"
 	"strconv"
 	"strings"
 
+	"github.com/dlclark/regexp2"
 	"github.com/eiannone/keyboard"
 	"github.com/spf13/cobra"
 )
@@ -32,7 +32,7 @@ var rootCmd = &cobra.Command{
 		recursive, _ := cmd.Flags().GetBool("recursive")
 		//insensitive, _ := cmd.Flags().GetBool("insensitive")
 
-		var regex *regexp.Regexp
+		var regex *regexp2.Regexp
 		var replace string
 		var err error
 
@@ -55,8 +55,8 @@ var rootCmd = &cobra.Command{
 			return
 		}
 
-		fmt.Println(regex)
-		fmt.Println(replace)
+		//fmt.Println(regex)
+		//fmt.Println(replace)
 
 		if recursive {
 			// TODO
@@ -68,33 +68,46 @@ var rootCmd = &cobra.Command{
 				return
 			}
 
+			var matchedRenames [][]string
+
 			for _, entry := range entries {
 				if entry.IsDir() {
 					continue
 				}
 
 				name := entry.Name()
-
-				result := regex.ReplaceAllString(name, replace)
+				result, _ := regex.Replace(name, replace, -1, 1)
 
 				if name == result {
 					continue
 				}
 
 				fmt.Println(name, " -> ", result)
+
+				matchedRenames = append(matchedRenames, []string{name, result})
 			}
 
-			fmt.Println("Accept these changes? (y/N)")
+			if len(matchedRenames) == 0 {
+				fmt.Println("No regex match!")
+				return
+			}
+
+			fmt.Println("\nAccept these changes? (y/N)")
+			keyboard.Open()
 			char, _, _ := keyboard.GetSingleKey()
-			if char == 'y' {
-				fmt.Println("asd")
+			keyboard.Close()
+			if char != 'y' {
+				return
 			}
 
+			for _, match := range matchedRenames {
+				os.Rename(match[0], match[1])
+			}
 		}
 	},
 }
 
-func ParseArgs(args []string) (*regexp.Regexp, string, error) {
+func ParseArgs(args []string) (*regexp2.Regexp, string, error) {
 	regexStr := args[0]
 	replace := args[1]
 
@@ -103,7 +116,7 @@ func ParseArgs(args []string) (*regexp.Regexp, string, error) {
 	regexStr = strings.Trim(regexStr, "/")
 	replace = strings.TrimRight(replace, "\r\n")
 
-	regex, err := regexp.Compile(regexStr)
+	regex, err := regexp2.Compile(regexStr, regexp2.None)
 
 	return regex, replace, err
 }
