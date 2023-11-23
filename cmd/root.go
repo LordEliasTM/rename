@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/eiannone/keyboard"
 	"github.com/spf13/cobra"
 )
 
@@ -72,8 +73,23 @@ var rootCmd = &cobra.Command{
 					continue
 				}
 
-				fmt.Println(entry.Name())
+				name := entry.Name()
+
+				result := regex.ReplaceAllString(name, replace)
+
+				if name == result {
+					continue
+				}
+
+				fmt.Println(name, " -> ", result)
 			}
+
+			fmt.Println("Accept these changes? (y/N)")
+			char, _, _ := keyboard.GetSingleKey()
+			if char == 'y' {
+				fmt.Println("asd")
+			}
+
 		}
 	},
 }
