@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -59,7 +60,47 @@ var rootCmd = &cobra.Command{
 		//fmt.Println(replace)
 
 		if recursive {
-			// TODO
+			var matchedRenames [][]string
+
+			filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
+				if info.IsDir() {
+					return nil
+				}
+
+				name := info.Name()
+				result, _ := regex.Replace(name, replace, -1, 1)
+
+				if name == result {
+					return nil
+				}
+
+				filenameRegex := regexp2.MustCompile(name+"$", regexp2.None)
+				pathWithoutFilename, _ := filenameRegex.Replace(path, "", -1, 1)
+				result = pathWithoutFilename + result
+
+				fmt.Println(path, " -> ", result)
+
+				matchedRenames = append(matchedRenames, []string{path, result})
+
+				return nil
+			})
+
+			if len(matchedRenames) == 0 {
+				fmt.Println("No regex match!")
+				return
+			}
+
+			fmt.Println("\nAccept these changes? (y/N)")
+			keyboard.Open()
+			char, _, _ := keyboard.GetSingleKey()
+			keyboard.Close()
+			if char != 'y' {
+				return
+			}
+
+			for _, match := range matchedRenames {
+				os.Rename(match[0], match[1])
+			}
 		} else {
 			entries, err := os.ReadDir(".")
 
