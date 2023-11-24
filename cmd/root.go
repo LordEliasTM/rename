@@ -60,92 +60,104 @@ var rootCmd = &cobra.Command{
 		//fmt.Println(replace)
 
 		if recursive {
-			var matchedRenames [][]string
-
-			filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
-				if info.IsDir() {
-					return nil
-				}
-
-				name := info.Name()
-				result, _ := regex.Replace(name, replace, -1, 1)
-
-				if name == result {
-					return nil
-				}
-
-				filenameRegex := regexp2.MustCompile(name+"$", regexp2.None)
-				pathWithoutFilename, _ := filenameRegex.Replace(path, "", -1, 1)
-				result = pathWithoutFilename + result
-
-				fmt.Println(path, " -> ", result)
-
-				matchedRenames = append(matchedRenames, []string{path, result})
-
-				return nil
-			})
-
-			if len(matchedRenames) == 0 {
-				fmt.Println("No regex match!")
-				return
-			}
-
-			fmt.Println("\nAccept these changes? (y/N)")
-			keyboard.Open()
-			char, _, _ := keyboard.GetSingleKey()
-			keyboard.Close()
-			if char != 'y' {
-				return
-			}
-
-			for _, match := range matchedRenames {
-				os.Rename(match[0], match[1])
-			}
+			RenameRecursively(regex, replace)
 		} else {
-			entries, err := os.ReadDir(".")
-
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-
-			var matchedRenames [][]string
-
-			for _, entry := range entries {
-				if entry.IsDir() {
-					continue
-				}
-
-				name := entry.Name()
-				result, _ := regex.Replace(name, replace, -1, 1)
-
-				if name == result {
-					continue
-				}
-
-				fmt.Println(name, " -> ", result)
-
-				matchedRenames = append(matchedRenames, []string{name, result})
-			}
-
-			if len(matchedRenames) == 0 {
-				fmt.Println("No regex match!")
-				return
-			}
-
-			fmt.Println("\nAccept these changes? (y/N)")
-			keyboard.Open()
-			char, _, _ := keyboard.GetSingleKey()
-			keyboard.Close()
-			if char != 'y' {
-				return
-			}
-
-			for _, match := range matchedRenames {
-				os.Rename(match[0], match[1])
-			}
+			RenameInCurrentDir(regex, replace)
 		}
 	},
+}
+
+func RenameRecursively(regex *regexp2.Regexp, replace string) {
+	// list with the files that matched the regex
+	var matchedRenames [][]string
+
+	// Walk the directory tree and files
+	filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
+		if info.IsDir() {
+			return nil
+		}
+
+		name := info.Name()
+		result, _ := regex.Replace(name, replace, -1, 1)
+
+		// skip if filename didnt change
+		if name == result {
+			return nil
+		}
+
+		// My garbage go skills
+		// Removes file name from end of path "asd/kek/file" -> "asd/kek/"
+		// and then appends the result to it "asd/kek/" -> "asd/kek/fefle"
+		filenameRegex := regexp2.MustCompile(name+"$", regexp2.None)
+		pathWithoutFilename, _ := filenameRegex.Replace(path, "", -1, 1)
+		result = pathWithoutFilename + result
+
+		fmt.Println(path, " -> ", result)
+
+		matchedRenames = append(matchedRenames, []string{path, result})
+
+		return nil
+	})
+
+	RenameMatched(matchedRenames)
+}
+
+func RenameInCurrentDir(regex *regexp2.Regexp, replace string) {
+	// get all entries in this current directory
+	entries, err := os.ReadDir(".")
+
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	// list with the files that matched the regex
+	var matchedRenames [][]string
+
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+
+		name := entry.Name()
+		result, _ := regex.Replace(name, replace, -1, 1)
+
+		// skip if filename didnt change
+		if name == result {
+			continue
+		}
+
+		fmt.Println(name, " -> ", result)
+
+		matchedRenames = append(matchedRenames, []string{name, result})
+	}
+
+	RenameMatched(matchedRenames)
+}
+
+func RenameMatched(matchedRenames [][]string) {
+	if len(matchedRenames) == 0 {
+		fmt.Println("No regex match!")
+		return
+	}
+
+	if !AcceptsChanges() {
+		return
+	}
+
+	for _, match := range matchedRenames {
+		// match is in format [oldName, newName]
+		os.Rename(match[0], match[1])
+	}
+}
+
+func AcceptsChanges() bool {
+	fmt.Println("\nAccept these changes? (y/N)")
+	// immediately open and close to not interfer with the stdinput when user doesnt specify arguments
+	keyboard.Open()
+	char, _, _ := keyboard.GetSingleKey()
+	keyboard.Close()
+	return char == 'y'
 }
 
 func ParseArgs(args []string, i bool) (*regexp2.Regexp, string, error) {
