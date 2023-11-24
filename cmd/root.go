@@ -30,7 +30,7 @@ var rootCmd = &cobra.Command{
 
 	Run: func(cmd *cobra.Command, args []string) {
 		recursive, _ := cmd.Flags().GetBool("recursive")
-		//insensitive, _ := cmd.Flags().GetBool("insensitive")
+		insensitive, _ := cmd.Flags().GetBool("insensitive")
 
 		var regex *regexp2.Regexp
 		var replace string
@@ -38,7 +38,7 @@ var rootCmd = &cobra.Command{
 
 		if len(args) == 2 {
 			// parse regex and replace from args
-			regex, replace, err = ParseArgs(args)
+			regex, replace, err = ParseArgs(args, insensitive)
 		} else if len(args) == 0 {
 			// read regex and replace from stdin
 			reader := bufio.NewReader(os.Stdin)
@@ -47,7 +47,7 @@ var rootCmd = &cobra.Command{
 			fmt.Print("Replace: ")
 			replace, _ = reader.ReadString('\n')
 
-			regex, replace, err = ParseArgs([]string{regexStr, replace})
+			regex, replace, err = ParseArgs([]string{regexStr, replace}, insensitive)
 		}
 
 		if err != nil {
@@ -107,7 +107,7 @@ var rootCmd = &cobra.Command{
 	},
 }
 
-func ParseArgs(args []string) (*regexp2.Regexp, string, error) {
+func ParseArgs(args []string, i bool) (*regexp2.Regexp, string, error) {
 	regexStr := args[0]
 	replace := args[1]
 
@@ -115,6 +115,11 @@ func ParseArgs(args []string) (*regexp2.Regexp, string, error) {
 	regexStr = strings.TrimRight(regexStr, "\r\n")
 	regexStr = strings.Trim(regexStr, "/")
 	replace = strings.TrimRight(replace, "\r\n")
+
+	// case insensitive
+	if i {
+		regexStr = "(?i)" + regexStr
+	}
 
 	regex, err := regexp2.Compile(regexStr, regexp2.None)
 
