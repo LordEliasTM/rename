@@ -32,6 +32,7 @@ var rootCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		recursive, _ := cmd.Flags().GetBool("recursive")
 		insensitive, _ := cmd.Flags().GetBool("insensitive")
+		hidden, _ := cmd.Flags().GetBool("hidden")
 
 		var regex *regexp2.Regexp
 		var replace string
@@ -60,19 +61,29 @@ var rootCmd = &cobra.Command{
 		//fmt.Println(replace)
 
 		if recursive {
-			RenameRecursively(regex, replace)
+			RenameRecursively(regex, replace, hidden)
 		} else {
-			RenameInCurrentDir(regex, replace)
+			RenameInCurrentDir(regex, replace, hidden, false, false)
 		}
 	},
 }
 
-func RenameRecursively(regex *regexp2.Regexp, replace string) {
+func RenameRecursively(regex *regexp2.Regexp, replace string, hidden bool) {
 	// list with the files that matched the regex
 	var matchedRenames [][]string
 
 	// Walk the directory tree and files
 	filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
+		// skip . and ..
+		if info.Name() == "." || info.Name() == ".." {
+			return nil
+		}
+		// exclude hidden files/folders by default, "hidden" allows hidden files/folders
+		if isHidden(info.Name()) && !hidden {
+			// skip whole tree
+			return filepath.SkipDir
+		}
+		// dont rename dirs
 		if info.IsDir() {
 			return nil
 		}
@@ -102,7 +113,7 @@ func RenameRecursively(regex *regexp2.Regexp, replace string) {
 	RenameMatched(matchedRenames)
 }
 
-func RenameInCurrentDir(regex *regexp2.Regexp, replace string) {
+func RenameInCurrentDir(regex *regexp2.Regexp, replace string, hidden bool, dirsOnly bool, alsoFiles bool) {
 	// get all entries in this current directory
 	entries, err := os.ReadDir(".")
 
@@ -115,7 +126,11 @@ func RenameInCurrentDir(regex *regexp2.Regexp, replace string) {
 	var matchedRenames [][]string
 
 	for _, entry := range entries {
-		if entry.IsDir() {
+		if isHidden(entry.Name()) && !hidden {
+			continue
+		}
+		// ignore dirs by default, except when -d flag
+		if entry.IsDir() && !dirsOnly {
 			continue
 		}
 
@@ -179,6 +194,10 @@ func ParseArgs(args []string, i bool) (*regexp2.Regexp, string, error) {
 	return regex, replace, err
 }
 
+func isHidden(fileName string) bool {
+	return fileName[0] == '.'
+}
+
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
@@ -200,4 +219,7 @@ func init() {
 	// rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	rootCmd.Flags().BoolP("insensitive", "i", false, "case insensitive")
 	rootCmd.Flags().BoolP("recursive", "r", false, "recursively rename in sub-directories")
+	rootCmd.Flags().BoolP("hidden", "x", false, "also rename hidden files/directories")
+	rootCmd.Flags().BoolP("onlyDirs", "d", false, "only rename directories")
+	rootCmd.Flags().BoolP("files", "f", false, "also rename files (must be used with -d)")
 }
