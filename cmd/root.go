@@ -32,7 +32,7 @@ var rootCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		recursive, _ := cmd.Flags().GetBool("recursive")
 		insensitive, _ := cmd.Flags().GetBool("insensitive")
-		hidden, _ := cmd.Flags().GetBool("hidden")
+		all, _ := cmd.Flags().GetBool("all")
 		onlyDirs, _ := cmd.Flags().GetBool("onlyDirs")
 		alsoFiles, _ := cmd.Flags().GetBool("files")
 
@@ -63,14 +63,14 @@ var rootCmd = &cobra.Command{
 		//fmt.Println(replace)
 
 		if recursive {
-			RenameRecursively(regex, replace, hidden, onlyDirs, alsoFiles)
+			RenameRecursively(regex, replace, all, onlyDirs, alsoFiles)
 		} else {
-			RenameInCurrentDir(regex, replace, hidden, onlyDirs, alsoFiles)
+			RenameInCurrentDir(regex, replace, all, onlyDirs, alsoFiles)
 		}
 	},
 }
 
-func RenameRecursively(regex *regexp2.Regexp, replace string, hidden bool, onlyDirs bool, alsoFiles bool) {
+func RenameRecursively(regex *regexp2.Regexp, replace string, all bool, onlyDirs bool, alsoFiles bool) {
 	// list with the files that matched the regex
 	var matchedRenames [][]string
 
@@ -80,8 +80,8 @@ func RenameRecursively(regex *regexp2.Regexp, replace string, hidden bool, onlyD
 		if info.Name() == "." || info.Name() == ".." {
 			return nil
 		}
-		// exclude hidden files/folders by default, "hidden" allows hidden files/folders
-		if isHidden(info.Name()) && !hidden {
+		// exclude hidden files/folders by default, "all" allows hidden files/folders
+		if isHidden(info.Name()) && !all {
 			// skip whole tree
 			return filepath.SkipDir
 		}
@@ -125,7 +125,7 @@ func RenameRecursively(regex *regexp2.Regexp, replace string, hidden bool, onlyD
 	RenameMatched(matchedRenames)
 }
 
-func RenameInCurrentDir(regex *regexp2.Regexp, replace string, hidden bool, onlyDirs bool, alsoFiles bool) {
+func RenameInCurrentDir(regex *regexp2.Regexp, replace string, all bool, onlyDirs bool, alsoFiles bool) {
 	// get all entries in this current directory
 	entries, err := os.ReadDir(".")
 
@@ -140,7 +140,7 @@ func RenameInCurrentDir(regex *regexp2.Regexp, replace string, hidden bool, only
 	for _, entry := range entries {
 		// those if statements look quite messy and noone will understand
 		// them. I hate myself for this but wharever
-		if isHidden(entry.Name()) && !hidden {
+		if isHidden(entry.Name()) && !all {
 			continue
 		}
 		// ignore dirs by default, except when -d flag
@@ -237,7 +237,7 @@ func init() {
 	// rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	rootCmd.Flags().BoolP("insensitive", "i", false, "case insensitive")
 	rootCmd.Flags().BoolP("recursive", "r", false, "recursively rename in sub-directories")
-	rootCmd.Flags().BoolP("hidden", "x", false, "also rename hidden files/directories")
-	rootCmd.Flags().BoolP("onlyDirs", "d", false, "only rename directories")
-	rootCmd.Flags().BoolP("files", "f", false, "also rename files (must be used with -d)")
+	rootCmd.Flags().BoolP("all", "a", false, "do not ignore entries starting with .")
+	rootCmd.Flags().BoolP("directories", "d", false, "only rename directories")
+	rootCmd.Flags().BoolP("files", "f", false, "also rename files")
 }
