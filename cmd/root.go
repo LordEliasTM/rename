@@ -7,10 +7,13 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/dlclark/regexp2"
 	"github.com/eiannone/keyboard"
@@ -33,7 +36,7 @@ var rootCmd = &cobra.Command{
 		recursive, _ := cmd.Flags().GetBool("recursive")
 		insensitive, _ := cmd.Flags().GetBool("insensitive")
 		all, _ := cmd.Flags().GetBool("all")
-		onlyDirs, _ := cmd.Flags().GetBool("onlyDirs")
+		onlyDirs, _ := cmd.Flags().GetBool("directories")
 		alsoFiles, _ := cmd.Flags().GetBool("files")
 
 		var regex *regexp2.Regexp
@@ -61,13 +64,97 @@ var rootCmd = &cobra.Command{
 
 		//fmt.Println(regex)
 		//fmt.Println(replace)
-
-		if recursive {
+		if recursive && onlyDirs {
+			HateMyLifeRenameDirsTreeWalkerThingyProbablyBuggyAsHell2()
+		} else if recursive {
 			RenameRecursively(regex, replace, all, onlyDirs, alsoFiles)
 		} else {
 			RenameInCurrentDir(regex, replace, all, onlyDirs, alsoFiles)
 		}
 	},
+}
+
+type NestedMap map[string]NestedMap
+type Path struct {
+	full     string
+	parts    []string
+	depth    int
+	dirEntry fs.DirEntry
+}
+
+func PathStringToStruct(path string, dirEntry fs.DirEntry) *Path {
+	parts := strings.Split(path, "/")
+	return &Path{
+		full:     path,
+		parts:    parts,
+		depth:    len(parts),
+		dirEntry: dirEntry,
+	}
+}
+
+// Walks shitty file tree from bottom to top
+// Memory intensive, so better get dad's credit card
+// to buy some more of that juicy gigabytes
+func HateMyLifeRenameDirsTreeWalkerThingyProbablyBuggyAsHell2() {
+	var asd []*Path
+
+	filepath.WalkDir(".", func(path string, d fs.DirEntry, err error) error {
+		sPath := PathStringToStruct(path, d)
+		asd = append(asd, sPath)
+		return nil
+	})
+
+	// sort descending by path depth
+	sort.Slice(asd, func(i, j int) bool {
+		return asd[i].depth > asd[j].depth
+	})
+
+	regex, replace, _ := ParseArgs([]string{"a", "b"}, false)
+
+	for _, p := range asd {
+		name := p.dirEntry.Name()
+		path := p.full
+
+		result, _ := regex.Replace(name, replace, -1, 1)
+
+		if name == result {
+			continue
+		}
+
+		filenameRegex := regexp2.MustCompile(name+"$", regexp2.None)
+		pathWithoutFilename, _ := filenameRegex.Replace(path, "", -1, 1)
+		result = pathWithoutFilename + result
+		fmt.Println(p.depth, path, "->", result)
+	}
+}
+
+func HateMyLifeRenameDirsTreeWalkerThingyProbablyBuggyAsHell() {
+	m := make(NestedMap)
+
+	filepath.WalkDir(".", func(path string, d fs.DirEntry, err error) error {
+		sPath := PathStringToStruct(path, d)
+		current := m
+		for _, v := range sPath.parts {
+			if current[v] == nil {
+				current[v] = make(NestedMap)
+			}
+			current = current[v]
+		}
+		fmt.Println(len(m))
+		return nil
+	})
+
+	regex, replace, _ := ParseArgs([]string{"a", "b"}, false)
+
+	DoSomeRecursiveAssDogballGarbage(m, regex, replace)
+}
+
+func DoSomeRecursiveAssDogballGarbage(ballz NestedMap, regex *regexp2.Regexp, replace string) {
+	for k, v := range ballz {
+		DoSomeRecursiveAssDogballGarbage(v, regex, replace)
+		fmt.Println(k)
+		time.Sleep(10 * time.Millisecond)
+	}
 }
 
 func RenameRecursively(regex *regexp2.Regexp, replace string, all bool, onlyDirs bool, alsoFiles bool) {
@@ -193,7 +280,7 @@ func AcceptsChanges() bool {
 	return char == 'y'
 }
 
-func ParseArgs(args []string, i bool) (*regexp2.Regexp, string, error) {
+func ParseArgs(args []string, insensitive bool) (*regexp2.Regexp, string, error) {
 	regexStr := args[0]
 	replace := args[1]
 
@@ -203,7 +290,7 @@ func ParseArgs(args []string, i bool) (*regexp2.Regexp, string, error) {
 	replace = strings.TrimRight(replace, "\r\n")
 
 	// case insensitive
-	if i {
+	if insensitive {
 		regexStr = "(?i)" + regexStr
 	}
 
