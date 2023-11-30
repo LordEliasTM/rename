@@ -33,6 +33,8 @@ var rootCmd = &cobra.Command{
 		recursive, _ := cmd.Flags().GetBool("recursive")
 		insensitive, _ := cmd.Flags().GetBool("insensitive")
 		hidden, _ := cmd.Flags().GetBool("hidden")
+		onlyDirs, _ := cmd.Flags().GetBool("onlyDirs")
+		alsoFiles, _ := cmd.Flags().GetBool("files")
 
 		var regex *regexp2.Regexp
 		var replace string
@@ -63,7 +65,7 @@ var rootCmd = &cobra.Command{
 		if recursive {
 			RenameRecursively(regex, replace, hidden)
 		} else {
-			RenameInCurrentDir(regex, replace, hidden, false, false)
+			RenameInCurrentDir(regex, replace, hidden, onlyDirs, alsoFiles)
 		}
 	},
 }
@@ -113,7 +115,7 @@ func RenameRecursively(regex *regexp2.Regexp, replace string, hidden bool) {
 	RenameMatched(matchedRenames)
 }
 
-func RenameInCurrentDir(regex *regexp2.Regexp, replace string, hidden bool, dirsOnly bool, alsoFiles bool) {
+func RenameInCurrentDir(regex *regexp2.Regexp, replace string, hidden bool, onlyDirs bool, alsoFiles bool) {
 	// get all entries in this current directory
 	entries, err := os.ReadDir(".")
 
@@ -126,11 +128,17 @@ func RenameInCurrentDir(regex *regexp2.Regexp, replace string, hidden bool, dirs
 	var matchedRenames [][]string
 
 	for _, entry := range entries {
+		// those if statements look quite messy and noone will understand
+		// them. I hate myself for this but wharever
 		if isHidden(entry.Name()) && !hidden {
 			continue
 		}
 		// ignore dirs by default, except when -d flag
-		if entry.IsDir() && !dirsOnly {
+		if entry.IsDir() && !onlyDirs {
+			fmt.Println(entry.Name())
+			continue
+		}
+		if !entry.IsDir() && onlyDirs && !alsoFiles {
 			continue
 		}
 
