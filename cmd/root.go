@@ -63,14 +63,14 @@ var rootCmd = &cobra.Command{
 		//fmt.Println(replace)
 
 		if recursive {
-			RenameRecursively(regex, replace, hidden)
+			RenameRecursively(regex, replace, hidden, onlyDirs, alsoFiles)
 		} else {
 			RenameInCurrentDir(regex, replace, hidden, onlyDirs, alsoFiles)
 		}
 	},
 }
 
-func RenameRecursively(regex *regexp2.Regexp, replace string, hidden bool) {
+func RenameRecursively(regex *regexp2.Regexp, replace string, hidden bool, onlyDirs bool, alsoFiles bool) {
 	// list with the files that matched the regex
 	var matchedRenames [][]string
 
@@ -85,10 +85,20 @@ func RenameRecursively(regex *regexp2.Regexp, replace string, hidden bool) {
 			// skip whole tree
 			return filepath.SkipDir
 		}
-		// dont rename dirs
-		if info.IsDir() {
+		// ignore dirs by default, except when -d flag
+		if info.IsDir() && !onlyDirs {
+			fmt.Println(info.Name())
 			return nil
 		}
+		// if file && only rename dirs && but not also rename files
+		if !info.IsDir() && onlyDirs && !alsoFiles {
+			return nil
+		}
+
+		//TODO Fix this folder renaming bug:
+		//   uhm -> khm
+		//   uhm/kek/uha -> uhm/kek/kha
+		// second one will not work because parent folder is already renamed
 
 		name := info.Name()
 		result, _ := regex.Replace(name, replace, -1, 1)
