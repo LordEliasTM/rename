@@ -238,6 +238,6 @@ func init() {
 	rootCmd.Flags().BoolP("insensitive", "i", false, "case insensitive")
 	rootCmd.Flags().BoolP("recursive", "r", false, "recursively rename in sub-directories")
 	rootCmd.Flags().BoolP("all", "a", false, "do not ignore entries starting with .")
-	rootCmd.Flags().BoolP("directories", "d", false, "only rename directories")
-	rootCmd.Flags().BoolP("files", "f", false, "also rename files")
+	rootCmd.Flags().BoolP("directories", "d", false, "rename directories")
+	rootCmd.Flags().BoolP("files", "f", false, "rename files, enabled by default unless -d is present")
 }
