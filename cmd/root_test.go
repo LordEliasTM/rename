@@ -4,6 +4,8 @@ import (
 	"os"
 	"strconv"
 	"testing"
+
+	"github.com/LordEliasTM/rename/renamer"
 )
 
 func TestParseArgs(t *testing.T) {
@@ -48,7 +50,7 @@ func TestRenameInCurrentDir(t *testing.T) {
 
 	os.Stdin = tmpfile
 
-	RenameInCurrentDir(regex, replace, false, false, false)
+	renamer.RenameInCurrentDir(regex, replace, false, false, false)
 
 	elems, _ := os.ReadDir(".")
 	t.Errorf("%q", elems)

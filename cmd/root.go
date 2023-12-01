@@ -7,17 +7,13 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
-	"io/fs"
 	"os"
-	"path/filepath"
-	"sort"
 	"strconv"
 	"strings"
 
-	"github.com/LordEliasTM/rename/utils"
+	"github.com/LordEliasTM/rename/renamer"
 
 	"github.com/dlclark/regexp2"
-	"github.com/eiannone/keyboard"
 	"github.com/spf13/cobra"
 )
 
@@ -64,157 +60,11 @@ var rootCmd = &cobra.Command{
 		}
 
 		if recursive {
-			RenameDeep(regex, replace, all, onlyDirs, alsoFiles)
+			renamer.RenameDeep(regex, replace, all, onlyDirs, alsoFiles)
 		} else {
-			RenameInCurrentDir(regex, replace, all, onlyDirs, alsoFiles)
+			renamer.RenameInCurrentDir(regex, replace, all, onlyDirs, alsoFiles)
 		}
 	},
-}
-
-type Path struct {
-	full     string
-	parts    []string
-	depth    int
-	dirEntry fs.DirEntry
-}
-
-func PathStringToStruct(path string, dirEntry fs.DirEntry) *Path {
-	parts := strings.Split(path, string(os.PathSeparator))
-	return &Path{
-		full:     path,
-		parts:    parts,
-		depth:    len(parts),
-		dirEntry: dirEntry,
-	}
-}
-
-// Walks shitty file tree from bottom to top
-// Memory intensive, so better get dad's credit card
-// to buy some more of that juicy gigabytes
-func RenameDeep(regex *regexp2.Regexp, replace string, all bool, onlyDirs bool, alsoFiles bool) {
-	var asd []*Path
-
-	filepath.WalkDir(".", func(path string, d fs.DirEntry, err error) error {
-		name := d.Name()
-		isDir := d.IsDir()
-
-		if name == "." || name == ".." {
-			return nil
-		}
-		if !all && utils.IsHidden(path) {
-			if d.IsDir() {
-				return filepath.SkipDir
-			} else {
-				return nil
-			}
-		}
-		if !onlyDirs && isDir {
-			return nil
-		}
-		if onlyDirs && !alsoFiles && !isDir {
-			return nil
-		}
-
-		sPath := PathStringToStruct(path, d)
-		asd = append(asd, sPath)
-		return nil
-	})
-
-	// sort descending by path depth
-	sort.Slice(asd, func(i, j int) bool {
-		return asd[i].depth > asd[j].depth
-	})
-
-	var matchedRenames [][]string
-
-	for _, p := range asd {
-		name := p.dirEntry.Name()
-		path := p.full
-
-		result, _ := regex.Replace(name, replace, -1, 1)
-
-		if name == result {
-			continue
-		}
-
-		filenameRegex := regexp2.MustCompile(name+"$", regexp2.None)
-		pathWithoutFilename, _ := filenameRegex.Replace(path, "", -1, 1)
-		result = pathWithoutFilename + result
-
-		matchedRenames = append(matchedRenames, []string{path, result})
-
-		fmt.Println(p.depth, path, "->", result)
-	}
-
-	RenameMatched(matchedRenames)
-}
-
-func RenameInCurrentDir(regex *regexp2.Regexp, replace string, all bool, onlyDirs bool, alsoFiles bool) {
-	// get all entries in this current directory
-	entries, err := os.ReadDir(".")
-
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	// list with the files that matched the regex
-	var matchedRenames [][]string
-
-	for _, entry := range entries {
-		// those if statements look quite messy and noone will understand
-		// them. I hate myself for this but wharever
-		if utils.IsHidden(entry.Name()) && !all {
-			continue
-		}
-		// ignore dirs by default, except when -d flag
-		if entry.IsDir() && !onlyDirs {
-			fmt.Println(entry.Name())
-			continue
-		}
-		if !entry.IsDir() && onlyDirs && !alsoFiles {
-			continue
-		}
-
-		name := entry.Name()
-		result, _ := regex.Replace(name, replace, -1, 1)
-
-		// skip if filename didnt change
-		if name == result {
-			continue
-		}
-
-		fmt.Println(name, " -> ", result)
-
-		matchedRenames = append(matchedRenames, []string{name, result})
-	}
-
-	RenameMatched(matchedRenames)
-}
-
-func RenameMatched(matchedRenames [][]string) {
-	if len(matchedRenames) == 0 {
-		fmt.Println("No regex match!")
-		return
-	}
-
-	if !AcceptsChanges() {
-		return
-	}
-
-	for _, match := range matchedRenames {
-		// match is in format [oldName, newName]
-		os.Rename(match[0], match[1])
-	}
-}
-
-func AcceptsChanges() bool {
-	fmt.Println("\nAccept these changes? (y/N)")
-	// immediately open and close to not interfer with the stdinput when user doesnt specify arguments
-	keyboard.Open()
-	char, _, _ := keyboard.GetSingleKey()
-	keyboard.Close()
-	return char == 'y'
 }
 
 func ParseArgs(args []string, insensitive bool) (*regexp2.Regexp, string, error) {
@@ -236,8 +86,6 @@ func ParseArgs(args []string, insensitive bool) (*regexp2.Regexp, string, error)
 	return regex, replace, err
 }
 
-// Execute adds all child commands to the root command and sets flags appropriately.
-// This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 	err := rootCmd.Execute()
 	if err != nil {
@@ -246,15 +94,6 @@ func Execute() {
 }
 
 func init() {
-	// Here you will define your flags and configuration settings.
-	// Cobra supports persistent flags, which, if defined here,
-	// will be global for your application.
-
-	// rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.rename.yaml)")
-
-	// Cobra also supports local flags, which will only run
-	// when this action is called directly.
-	// rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	rootCmd.Flags().BoolP("insensitive", "i", false, "case insensitive")
 	rootCmd.Flags().BoolP("recursive", "r", false, "recursively rename in sub-directories")
 	rootCmd.Flags().BoolP("all", "a", false, "do not ignore entries starting with .")
