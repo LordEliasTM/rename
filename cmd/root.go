@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"lolkek/rename/utils"
 	"os"
 	"path/filepath"
 	"sort"
@@ -173,7 +174,7 @@ func RenameRecursively(regex *regexp2.Regexp, replace string, all bool, onlyDirs
 			return nil
 		}
 		// exclude hidden files/folders by default, "all" allows hidden files/folders
-		if isHidden(info.Name()) && !all {
+		if utils.IsHidden(info.Name()) && !all {
 			// skip whole tree
 			return filepath.SkipDir
 		}
@@ -232,7 +233,7 @@ func RenameInCurrentDir(regex *regexp2.Regexp, replace string, all bool, onlyDir
 	for _, entry := range entries {
 		// those if statements look quite messy and noone will understand
 		// them. I hate myself for this but wharever
-		if isHidden(entry.Name()) && !all {
+		if utils.IsHidden(entry.Name()) && !all {
 			continue
 		}
 		// ignore dirs by default, except when -d flag
@@ -302,10 +303,6 @@ func ParseArgs(args []string, insensitive bool) (*regexp2.Regexp, string, error)
 	regex, err := regexp2.Compile(regexStr, regexp2.None)
 
 	return regex, replace, err
-}
-
-func isHidden(fileName string) bool {
-	return fileName[0] == '.'
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
