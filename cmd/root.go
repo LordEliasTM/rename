@@ -13,7 +13,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/LordEliasTM/rename/utils"
 
@@ -64,19 +63,14 @@ var rootCmd = &cobra.Command{
 			return
 		}
 
-		//fmt.Println(regex)
-		//fmt.Println(replace)
-		if recursive && onlyDirs {
-			HateMyLifeRenameDirsTreeWalkerThingyProbablyBuggyAsHell2(regex, replace, all, onlyDirs, alsoFiles)
-		} else if recursive {
-			RenameRecursively(regex, replace, all, onlyDirs, alsoFiles)
+		if recursive {
+			RenameDeep(regex, replace, all, onlyDirs, alsoFiles)
 		} else {
 			RenameInCurrentDir(regex, replace, all, onlyDirs, alsoFiles)
 		}
 	},
 }
 
-type NestedMap map[string]NestedMap
 type Path struct {
 	full     string
 	parts    []string
@@ -97,7 +91,7 @@ func PathStringToStruct(path string, dirEntry fs.DirEntry) *Path {
 // Walks shitty file tree from bottom to top
 // Memory intensive, so better get dad's credit card
 // to buy some more of that juicy gigabytes
-func HateMyLifeRenameDirsTreeWalkerThingyProbablyBuggyAsHell2(regex *regexp2.Regexp, replace string, all bool, onlyDirs bool, alsoFiles bool) {
+func RenameDeep(regex *regexp2.Regexp, replace string, all bool, onlyDirs bool, alsoFiles bool) {
 	var asd []*Path
 
 	filepath.WalkDir(".", func(path string, d fs.DirEntry, err error) error {
@@ -151,90 +145,6 @@ func HateMyLifeRenameDirsTreeWalkerThingyProbablyBuggyAsHell2(regex *regexp2.Reg
 
 		fmt.Println(p.depth, path, "->", result)
 	}
-
-	RenameMatched(matchedRenames)
-}
-
-func HateMyLifeRenameDirsTreeWalkerThingyProbablyBuggyAsHell() {
-	m := make(NestedMap)
-
-	filepath.WalkDir(".", func(path string, d fs.DirEntry, err error) error {
-		sPath := PathStringToStruct(path, d)
-		current := m
-		for _, v := range sPath.parts {
-			if current[v] == nil {
-				current[v] = make(NestedMap)
-			}
-			current = current[v]
-		}
-		fmt.Println(len(m))
-		return nil
-	})
-
-	regex, replace, _ := ParseArgs([]string{"a", "b"}, false)
-
-	DoSomeRecursiveAssDogballGarbage(m, regex, replace)
-}
-
-func DoSomeRecursiveAssDogballGarbage(ballz NestedMap, regex *regexp2.Regexp, replace string) {
-	for k, v := range ballz {
-		DoSomeRecursiveAssDogballGarbage(v, regex, replace)
-		fmt.Println(k)
-		time.Sleep(10 * time.Millisecond)
-	}
-}
-
-func RenameRecursively(regex *regexp2.Regexp, replace string, all bool, onlyDirs bool, alsoFiles bool) {
-	// list with the files that matched the regex
-	var matchedRenames [][]string
-
-	// Walk the directory tree and files
-	filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
-		// skip . and ..
-		if info.Name() == "." || info.Name() == ".." {
-			return nil
-		}
-		// exclude hidden files/folders by default, "all" allows hidden files/folders
-		if utils.IsHidden(path) && !all {
-			// skip whole tree
-			return filepath.SkipDir
-		}
-		// ignore dirs by default, except when -d flag
-		if info.IsDir() && !onlyDirs {
-			fmt.Println(info.Name())
-			return nil
-		}
-		// if file && only rename dirs && but not also rename files
-		if !info.IsDir() && onlyDirs && !alsoFiles {
-			return nil
-		}
-
-		//TODO Fix this folder renaming bug:
-		//   uhm -> khm
-		//   uhm/kek/uha -> uhm/kek/kha
-		// second one will not work because parent folder is already renamed
-
-		name := info.Name()
-		result, _ := regex.Replace(name, replace, -1, 1)
-
-		// skip if filename didnt change
-		if name == result {
-			return nil
-		}
-
-		// My garbage go skills
-		// Removes file name from end of path "asd/kek/file" -> "asd/kek/"
-		// and then appends the result to it "asd/kek/" -> "asd/kek/fefle"
-		filenameRegex := regexp2.MustCompile(name+"$", regexp2.None)
-		pathWithoutFilename, _ := filenameRegex.Replace(path, "", -1, 1)
-		result = pathWithoutFilename + result
-
-		fmt.Println(path, " -> ", result)
-
-		matchedRenames = append(matchedRenames, []string{path, result})
-
-		return nil
-	})
 
 	RenameMatched(matchedRenames)
 }

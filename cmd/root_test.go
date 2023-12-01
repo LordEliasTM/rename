@@ -55,7 +55,3 @@ func TestRenameInCurrentDir(t *testing.T) {
 
 	tmpfile.Close()
 }
-
-func TestASD(t *testing.T) {
-	HateMyLifeRenameDirsTreeWalkerThingyProbablyBuggyAsHell()
-}
