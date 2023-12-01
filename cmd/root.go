@@ -67,7 +67,7 @@ var rootCmd = &cobra.Command{
 		//fmt.Println(regex)
 		//fmt.Println(replace)
 		if recursive && onlyDirs {
-			HateMyLifeRenameDirsTreeWalkerThingyProbablyBuggyAsHell2(regex, replace)
+			HateMyLifeRenameDirsTreeWalkerThingyProbablyBuggyAsHell2(regex, replace, all, onlyDirs, alsoFiles)
 		} else if recursive {
 			RenameRecursively(regex, replace, all, onlyDirs, alsoFiles)
 		} else {
@@ -97,10 +97,32 @@ func PathStringToStruct(path string, dirEntry fs.DirEntry) *Path {
 // Walks shitty file tree from bottom to top
 // Memory intensive, so better get dad's credit card
 // to buy some more of that juicy gigabytes
-func HateMyLifeRenameDirsTreeWalkerThingyProbablyBuggyAsHell2(regex *regexp2.Regexp, replace string) {
+func HateMyLifeRenameDirsTreeWalkerThingyProbablyBuggyAsHell2(regex *regexp2.Regexp, replace string, all bool, onlyDirs bool, alsoFiles bool) {
 	var asd []*Path
 
 	filepath.WalkDir(".", func(path string, d fs.DirEntry, err error) error {
+		name := d.Name()
+		isDir := d.IsDir()
+
+		if name == "." || name == ".." || name == ".DS_Store" {
+			return nil
+		}
+		fmt.Println("0")
+		fmt.Println(name)
+		if !all && isHidden(name) {
+			fmt.Println("skyp")
+			return filepath.SkipDir
+		}
+		fmt.Println("1")
+		if !onlyDirs && isDir {
+			return nil
+		}
+		fmt.Println("2")
+		if onlyDirs && !alsoFiles && !isDir {
+			return nil
+		}
+		fmt.Println("3")
+
 		sPath := PathStringToStruct(path, d)
 		asd = append(asd, sPath)
 		return nil
