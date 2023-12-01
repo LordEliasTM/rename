@@ -20,7 +20,7 @@ type MatchedRename struct {
 // Walks shitty file tree from bottom to top
 // Memory intensive, so better get dad's credit card
 // to buy some more of that juicy gigabytes
-func RenameDeep(regex *regexp2.Regexp, replace string, all bool, onlyDirs bool, alsoFiles bool) {
+func RenameDeep(regex *regexp2.Regexp, replace string, all bool, onlyDirs bool, alsoFiles bool, yes bool) {
 	var asd []*Path
 
 	filepath.WalkDir(".", func(path string, d fs.DirEntry, err error) error {
@@ -75,10 +75,10 @@ func RenameDeep(regex *regexp2.Regexp, replace string, all bool, onlyDirs bool, 
 		fmt.Println(p.depth, path, "->", result)
 	}
 
-	RenameMatched(matchedRenames)
+	RenameMatched(matchedRenames, yes)
 }
 
-func RenameInCurrentDir(regex *regexp2.Regexp, replace string, all bool, onlyDirs bool, alsoFiles bool) {
+func RenameInCurrentDir(regex *regexp2.Regexp, replace string, all bool, onlyDirs bool, alsoFiles bool, yes bool) {
 	// get all entries in this current directory
 	entries, err := os.ReadDir(".")
 
@@ -118,16 +118,16 @@ func RenameInCurrentDir(regex *regexp2.Regexp, replace string, all bool, onlyDir
 		matchedRenames = append(matchedRenames, MatchedRename{name, result})
 	}
 
-	RenameMatched(matchedRenames)
+	RenameMatched(matchedRenames, yes)
 }
 
-func RenameMatched(matchedRenames []MatchedRename) {
+func RenameMatched(matchedRenames []MatchedRename, yes bool) {
 	if len(matchedRenames) == 0 {
 		fmt.Println("No regex match!")
 		return
 	}
 
-	if !AcceptsChanges() {
+	if !yes && !AcceptsChanges() {
 		return
 	}
 

@@ -50,7 +50,7 @@ func TestRenameInCurrentDir(t *testing.T) {
 
 	os.Stdin = tmpfile
 
-	renamer.RenameInCurrentDir(regex, replace, false, false, false)
+	renamer.RenameInCurrentDir(regex, replace, false, false, false, false)
 
 	elems, _ := os.ReadDir(".")
 	t.Errorf("%q", elems)
