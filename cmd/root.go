@@ -8,13 +8,14 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
-	"lolkek/rename/utils"
 	"os"
 	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/LordEliasTM/rename/utils"
 
 	"github.com/dlclark/regexp2"
 	"github.com/eiannone/keyboard"

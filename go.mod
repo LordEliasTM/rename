@@ -1,4 +1,4 @@
-module lolkek/rename
+module github.com/LordEliasTM/rename
 
 go 1.21.4
 
