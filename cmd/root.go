@@ -104,24 +104,22 @@ func HateMyLifeRenameDirsTreeWalkerThingyProbablyBuggyAsHell2(regex *regexp2.Reg
 		name := d.Name()
 		isDir := d.IsDir()
 
-		if name == "." || name == ".." || name == ".DS_Store" {
+		if name == "." || name == ".." {
 			return nil
 		}
-		fmt.Println("0")
-		fmt.Println(name)
-		if !all && isHidden(name) {
-			fmt.Println("skyp")
-			return filepath.SkipDir
+		if !all && utils.IsHidden(name) {
+			if d.IsDir() {
+				return filepath.SkipDir
+			} else {
+				return nil
+			}
 		}
-		fmt.Println("1")
 		if !onlyDirs && isDir {
 			return nil
 		}
-		fmt.Println("2")
 		if onlyDirs && !alsoFiles && !isDir {
 			return nil
 		}
-		fmt.Println("3")
 
 		sPath := PathStringToStruct(path, d)
 		asd = append(asd, sPath)
