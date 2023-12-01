@@ -107,7 +107,7 @@ func HateMyLifeRenameDirsTreeWalkerThingyProbablyBuggyAsHell2(regex *regexp2.Reg
 		if name == "." || name == ".." {
 			return nil
 		}
-		if !all && utils.IsHidden(name) {
+		if !all && utils.IsHidden(path) {
 			if d.IsDir() {
 				return filepath.SkipDir
 			} else {
@@ -195,7 +195,7 @@ func RenameRecursively(regex *regexp2.Regexp, replace string, all bool, onlyDirs
 			return nil
 		}
 		// exclude hidden files/folders by default, "all" allows hidden files/folders
-		if utils.IsHidden(info.Name()) && !all {
+		if utils.IsHidden(path) && !all {
 			// skip whole tree
 			return filepath.SkipDir
 		}
