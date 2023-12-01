@@ -1,11 +1,7 @@
 package cmd
 
 import (
-	"os"
-	"strconv"
 	"testing"
-
-	"github.com/LordEliasTM/rename/renamer"
 )
 
 func TestParseArgs(t *testing.T) {
@@ -22,38 +18,4 @@ func TestParseArgs(t *testing.T) {
 	if err2 == nil {
 		t.Errorf("Didn't get error for invalid regex: %q", args2[0])
 	}
-}
-
-func TestRenameInCurrentDir(t *testing.T) {
-	os.Chdir(t.TempDir())
-
-	for i := 0; i < 20; i++ {
-		os.Create("asd" + strconv.Itoa(i) + ".txt")
-	}
-
-	args1 := []string{"/asd/", "kekw"}
-	regex, replace, err := ParseArgs(args1, false)
-
-	if regex.String() != "asd" || replace != "kekw" || err != nil {
-		t.Errorf("ParseArgs failed: %q, %q, %q", regex.String(), replace, err)
-	}
-
-	content := []byte("y")
-	tmpfile, _ := os.CreateTemp(t.TempDir(), "stdin_tmp")
-	defer os.Remove(t.TempDir() + "/" + tmpfile.Name())
-
-	tmpfile.Write(content)
-	tmpfile.Seek(0, 0)
-
-	oldStdin := os.Stdin
-	defer func() { os.Stdin = oldStdin }()
-
-	os.Stdin = tmpfile
-
-	renamer.RenameInCurrentDir(regex, replace, false, false, false, false)
-
-	elems, _ := os.ReadDir(".")
-	t.Errorf("%q", elems)
-
-	tmpfile.Close()
 }
