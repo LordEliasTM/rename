@@ -65,7 +65,7 @@ var rootCmd = &cobra.Command{
 		//fmt.Println(regex)
 		//fmt.Println(replace)
 		if recursive && onlyDirs {
-			HateMyLifeRenameDirsTreeWalkerThingyProbablyBuggyAsHell2()
+			HateMyLifeRenameDirsTreeWalkerThingyProbablyBuggyAsHell2(regex, replace)
 		} else if recursive {
 			RenameRecursively(regex, replace, all, onlyDirs, alsoFiles)
 		} else {
@@ -95,7 +95,7 @@ func PathStringToStruct(path string, dirEntry fs.DirEntry) *Path {
 // Walks shitty file tree from bottom to top
 // Memory intensive, so better get dad's credit card
 // to buy some more of that juicy gigabytes
-func HateMyLifeRenameDirsTreeWalkerThingyProbablyBuggyAsHell2() {
+func HateMyLifeRenameDirsTreeWalkerThingyProbablyBuggyAsHell2(regex *regexp2.Regexp, replace string) {
 	var asd []*Path
 
 	filepath.WalkDir(".", func(path string, d fs.DirEntry, err error) error {
@@ -109,7 +109,7 @@ func HateMyLifeRenameDirsTreeWalkerThingyProbablyBuggyAsHell2() {
 		return asd[i].depth > asd[j].depth
 	})
 
-	regex, replace, _ := ParseArgs([]string{"a", "b"}, false)
+	var matchedRenames [][]string
 
 	for _, p := range asd {
 		name := p.dirEntry.Name()
@@ -124,8 +124,13 @@ func HateMyLifeRenameDirsTreeWalkerThingyProbablyBuggyAsHell2() {
 		filenameRegex := regexp2.MustCompile(name+"$", regexp2.None)
 		pathWithoutFilename, _ := filenameRegex.Replace(path, "", -1, 1)
 		result = pathWithoutFilename + result
+
+		matchedRenames = append(matchedRenames, []string{path, result})
+
 		fmt.Println(p.depth, path, "->", result)
 	}
+
+	RenameMatched(matchedRenames)
 }
 
 func HateMyLifeRenameDirsTreeWalkerThingyProbablyBuggyAsHell() {
