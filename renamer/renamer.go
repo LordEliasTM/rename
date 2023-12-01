@@ -51,14 +51,14 @@ func RenameDeep(regex *regexp2.Regexp, replace string, all bool, onlyDirs bool, 
 
 	// sort descending by path depth
 	sort.Slice(asd, func(i, j int) bool {
-		return asd[i].depth > asd[j].depth
+		return asd[i].Depth > asd[j].Depth
 	})
 
 	var matchedRenames []MatchedRename
 
 	for _, p := range asd {
-		name := p.dirEntry.Name()
-		path := p.full
+		name := p.DirEntry.Name()
+		path := p.Full
 
 		result, _ := regex.Replace(name, replace, -1, 1)
 
@@ -72,7 +72,7 @@ func RenameDeep(regex *regexp2.Regexp, replace string, all bool, onlyDirs bool, 
 
 		matchedRenames = append(matchedRenames, MatchedRename{path, result})
 
-		fmt.Println(p.depth, path, "->", result)
+		fmt.Println(p.Depth, path, "->", result)
 	}
 
 	RenameMatched(matchedRenames, yes)
