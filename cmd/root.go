@@ -85,7 +85,7 @@ type Path struct {
 }
 
 func PathStringToStruct(path string, dirEntry fs.DirEntry) *Path {
-	parts := strings.Split(path, "/")
+	parts := strings.Split(path, string(os.PathSeparator))
 	return &Path{
 		full:     path,
 		parts:    parts,
