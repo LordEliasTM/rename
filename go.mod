@@ -5,6 +5,7 @@ go 1.21.4
 require (
 	github.com/dlclark/regexp2 v1.10.0
 	github.com/eiannone/keyboard v0.0.0-20200508000154-caf4b762e807
+	github.com/sergi/go-diff v1.3.1
 	github.com/spf13/cobra v1.8.0
 )
 

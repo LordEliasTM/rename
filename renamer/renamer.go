@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"sort"
 
+	"github.com/LordEliasTM/rename/strdiff"
 	"github.com/LordEliasTM/rename/utils"
 	"github.com/dlclark/regexp2"
 	"github.com/eiannone/keyboard"
@@ -72,7 +73,7 @@ func RenameDeep(regex *regexp2.Regexp, replace string, all bool, onlyDirs bool, 
 
 		matchedRenames = append(matchedRenames, MatchedRename{path, result})
 
-		fmt.Println(p.Depth, path, "->", result)
+		fmt.Println(strdiff.SheeshDiff(path, result))
 	}
 
 	RenameMatched(matchedRenames, yes)
@@ -98,7 +99,6 @@ func RenameInCurrentDir(regex *regexp2.Regexp, replace string, all bool, onlyDir
 		}
 		// ignore dirs by default, except when -d flag
 		if entry.IsDir() && !onlyDirs {
-			fmt.Println(entry.Name())
 			continue
 		}
 		if !entry.IsDir() && onlyDirs && !alsoFiles {
@@ -113,7 +113,7 @@ func RenameInCurrentDir(regex *regexp2.Regexp, replace string, all bool, onlyDir
 			continue
 		}
 
-		fmt.Println(name, " -> ", result)
+		fmt.Println(strdiff.SheeshDiff(name, result))
 
 		matchedRenames = append(matchedRenames, MatchedRename{name, result})
 	}
