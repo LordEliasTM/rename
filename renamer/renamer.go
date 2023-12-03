@@ -1,22 +1,21 @@
 package renamer
 
 import (
+	"bufio"
 	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 
 	"github.com/LordEliasTM/rename/strdiff"
 	"github.com/LordEliasTM/rename/utils"
 	"github.com/dlclark/regexp2"
 	"github.com/eiannone/keyboard"
-)
 
-type MatchedRename struct {
-	oldName string
-	newName string
-}
+	. "github.com/LordEliasTM/rename/types"
+)
 
 // Walks shitty file tree from bottom to top
 // Memory intensive, so better get dad's credit card
@@ -132,7 +131,31 @@ func RenameMatched(matchedRenames []MatchedRename, yes bool) {
 	}
 
 	for _, match := range matchedRenames {
-		os.Rename(match.oldName, match.newName)
+		// if file exists
+		if _, err := os.Stat(match.NewName); err == nil {
+			fmt.Printf("File %s already exists! (o = overwrite, s = skip, r = choose new name, c = cancel)\n", match.NewName)
+			keyboard.Open()
+			char, _, _ := keyboard.GetSingleKey()
+			keyboard.Close()
+			switch char {
+			case 'o':
+				break
+			case 's':
+				continue
+			case 'r':
+				reader := bufio.NewReader(os.Stdin)
+				fmt.Print("New Name (write full path): ")
+				newerName, _ := reader.ReadString('\n')
+				newerName = strings.TrimRight(newerName, "\r\n")
+				match.NewName = newerName
+				break
+			case 'c':
+				return
+			default:
+				continue
+			}
+		}
+		os.Rename(match.OldName, match.NewName)
 	}
 }
 

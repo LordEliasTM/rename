@@ -4,14 +4,9 @@ import (
 	"io/fs"
 	"os"
 	"strings"
-)
 
-type Path struct {
-	Full     string
-	Parts    []string
-	Depth    int
-	DirEntry fs.DirEntry
-}
+	. "github.com/LordEliasTM/rename/types"
+)
 
 func PathStringToStruct(path string, dirEntry fs.DirEntry) *Path {
 	parts := strings.Split(path, string(os.PathSeparator))
