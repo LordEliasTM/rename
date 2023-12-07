@@ -4,11 +4,8 @@ Copyright © 2023 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"bufio"
-	"errors"
 	"fmt"
 	"os"
-	"strconv"
 	"strings"
 
 	"github.com/LordEliasTM/rename/renamer"
@@ -21,13 +18,7 @@ import (
 var rootCmd = &cobra.Command{
 	Use:   "rename <regex> <replace>",
 	Short: "Rename all files in the current folder with regex",
-	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 0 && len(args) != 2 {
-			argNumStr := strconv.Itoa(len(args))
-			return errors.New("accetps 0 or 2 args, recieved " + argNumStr)
-		}
-		return nil
-	},
+	Args:  cobra.ExactArgs(2),
 
 	Run: func(cmd *cobra.Command, args []string) {
 		recursive, _ := cmd.Flags().GetBool("recursive")
@@ -37,24 +28,7 @@ var rootCmd = &cobra.Command{
 		alsoFiles, _ := cmd.Flags().GetBool("files")
 		yes, _ := cmd.Flags().GetBool("yes")
 
-		var regex *regexp2.Regexp
-		var replace string
-		var err error
-
-		if len(args) == 2 {
-			// parse regex and replace from args
-			regex, replace, err = ParseArgs(args, insensitive)
-		} else if len(args) == 0 {
-			// read regex and replace from stdin
-			reader := bufio.NewReader(os.Stdin)
-			fmt.Print("Regex: ")
-			regexStr, _ := reader.ReadString('\n')
-			fmt.Print("Replace: ")
-			replace, _ = reader.ReadString('\n')
-
-			regex, replace, err = ParseArgs([]string{regexStr, replace}, insensitive)
-		}
-
+		regex, replace, err := ParseArgs(args, insensitive)
 		if err != nil {
 			fmt.Println(err)
 			return
