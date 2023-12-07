@@ -31,7 +31,7 @@ func TestRenameDeep(t *testing.T) {
 	// do test
 
 	args := []string{"/uhm/", "xxx"}
-	regex, replace, _ := cmd.ParseArgs(args, false)
+	regex, replace, _ := cmd.ParseArgs(args, false, false)
 
 	renamer.RenameDeep(regex, replace, false, false, false, true, 1)
 

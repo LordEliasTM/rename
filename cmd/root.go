@@ -27,6 +27,7 @@ var rootCmd = &cobra.Command{
 		onlyDirs, _ := cmd.Flags().GetBool("directories")
 		alsoFiles, _ := cmd.Flags().GetBool("files")
 		yes, _ := cmd.Flags().GetBool("yes")
+		stringMode, _ := cmd.Flags().GetBool("string")
 		var replaceCount int
 		if global, _ := cmd.Flags().GetBool("global"); global {
 			replaceCount = -1
@@ -34,7 +35,7 @@ var rootCmd = &cobra.Command{
 			replaceCount = 1
 		}
 
-		regex, replace, err := ParseArgs(args, insensitive)
+		regex, replace, err := ParseArgs(args, insensitive, stringMode)
 		if err != nil {
 			fmt.Println(err)
 			return
@@ -48,9 +49,15 @@ var rootCmd = &cobra.Command{
 	},
 }
 
-func ParseArgs(args []string, insensitive bool) (*regexp2.Regexp, string, error) {
+var regexEscapeSpecialRegexChars = regexp2.MustCompile(`\.|\||\(|\)|\[|\]|\{|\}|\*|\+|\?|\$|\^|\/|\-|\\`, regexp2.None)
+
+func ParseArgs(args []string, insensitive bool, stringMode bool) (*regexp2.Regexp, string, error) {
 	regexStr := args[0]
 	replace := args[1]
+
+	if stringMode {
+		regexStr, _ = regexEscapeSpecialRegexChars.Replace(regexStr, `\$&`, -1, -1)
+	}
 
 	// reading stdin also reads the newline, so need to remove that
 	regexStr = strings.TrimRight(regexStr, "\r\n")
@@ -82,4 +89,5 @@ func init() {
 	rootCmd.Flags().BoolP("files", "f", false, "rename files, enabled by default unless -d is present")
 	rootCmd.Flags().BoolP("yes", "y", false, "skip prompt to accept changes")
 	rootCmd.Flags().BoolP("global", "g", false, "regex global flag")
+	rootCmd.Flags().BoolP("string", "s", false, "take regex argument as string, not as regex")
 }
