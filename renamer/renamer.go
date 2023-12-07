@@ -20,7 +20,7 @@ import (
 // Walks shitty file tree from bottom to top
 // Memory intensive, so better get dad's credit card
 // to buy some more of that juicy gigabytes
-func RenameDeep(regex *regexp2.Regexp, replace string, all bool, onlyDirs bool, alsoFiles bool, yes bool) {
+func RenameDeep(regex *regexp2.Regexp, replace string, all bool, onlyDirs bool, alsoFiles bool, yes bool, replaceCount int) {
 	var asd []*Path
 
 	filepath.WalkDir(".", func(path string, d fs.DirEntry, err error) error {
@@ -60,7 +60,7 @@ func RenameDeep(regex *regexp2.Regexp, replace string, all bool, onlyDirs bool, 
 		name := p.DirEntry.Name()
 		path := p.Full
 
-		result, _ := regex.Replace(name, replace, -1, 1)
+		result, _ := regex.Replace(name, replace, -1, replaceCount)
 
 		if name == result {
 			continue
@@ -78,7 +78,7 @@ func RenameDeep(regex *regexp2.Regexp, replace string, all bool, onlyDirs bool, 
 	RenameMatched(matchedRenames, yes)
 }
 
-func RenameInCurrentDir(regex *regexp2.Regexp, replace string, all bool, onlyDirs bool, alsoFiles bool, yes bool) {
+func RenameInCurrentDir(regex *regexp2.Regexp, replace string, all bool, onlyDirs bool, alsoFiles bool, yes bool, replaceCount int) {
 	// get all entries in this current directory
 	entries, err := os.ReadDir(".")
 
@@ -105,7 +105,7 @@ func RenameInCurrentDir(regex *regexp2.Regexp, replace string, all bool, onlyDir
 		}
 
 		name := entry.Name()
-		result, _ := regex.Replace(name, replace, -1, 1)
+		result, _ := regex.Replace(name, replace, -1, replaceCount)
 
 		// skip if filename didnt change
 		if name == result {

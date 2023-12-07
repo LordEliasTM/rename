@@ -27,6 +27,12 @@ var rootCmd = &cobra.Command{
 		onlyDirs, _ := cmd.Flags().GetBool("directories")
 		alsoFiles, _ := cmd.Flags().GetBool("files")
 		yes, _ := cmd.Flags().GetBool("yes")
+		var replaceCount int
+		if global, _ := cmd.Flags().GetBool("global"); global {
+			replaceCount = -1
+		} else {
+			replaceCount = 1
+		}
 
 		regex, replace, err := ParseArgs(args, insensitive)
 		if err != nil {
@@ -35,9 +41,9 @@ var rootCmd = &cobra.Command{
 		}
 
 		if recursive {
-			renamer.RenameDeep(regex, replace, all, onlyDirs, alsoFiles, yes)
+			renamer.RenameDeep(regex, replace, all, onlyDirs, alsoFiles, yes, replaceCount)
 		} else {
-			renamer.RenameInCurrentDir(regex, replace, all, onlyDirs, alsoFiles, yes)
+			renamer.RenameInCurrentDir(regex, replace, all, onlyDirs, alsoFiles, yes, replaceCount)
 		}
 	},
 }
@@ -75,4 +81,5 @@ func init() {
 	rootCmd.Flags().BoolP("directories", "d", false, "rename directories")
 	rootCmd.Flags().BoolP("files", "f", false, "rename files, enabled by default unless -d is present")
 	rootCmd.Flags().BoolP("yes", "y", false, "skip prompt to accept changes")
+	rootCmd.Flags().BoolP("global", "g", false, "regex global flag")
 }
